@@ -21,36 +21,35 @@ class _OnboardingPageState extends State<OnboardingPage>
 
   final List<OnboardingItem> items = [
     OnboardingItem(
-      title: "Find Perfect Flights",
-      description:
-          "Search and compare flights from hundreds of airlines worldwide",
-      image: "🛫",
+      title: "Search Flights Instantly",
+      description: "Find the best flight deals in seconds",
+      image: "assets/images/1.png",
       gradient: const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [AppColors.gradient1, AppColors.gradient2],
+        colors: [AppColors.gradient1, AppColors.gradient3],
       ),
     ),
     OnboardingItem(
-      title: "Best Deals",
+      title: "Compare Prices Easily",
       description:
-          "Get the best prices and exclusive deals on your favorite destinations",
-      image: "💰",
+          "Find the best deals on flights from multiple airlines in one place.",
+      image: "assets/images/2.png",
       gradient: const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [AppColors.gradient3, AppColors.gradient4],
+        colors: [AppColors.gradient2, AppColors.gradient4],
       ),
     ),
     OnboardingItem(
-      title: "Easy Booking",
+      title: "Book with Confidence",
       description:
-          "Book your flights in just a few taps with our intuitive interface",
-      image: "✈️",
+          "Secure your travel plans with our reliable booking process.",
+      image: "assets/images/3.png",
       gradient: const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [AppColors.gradient2, AppColors.gradient3],
+        colors: [AppColors.gradient5, AppColors.gradient6],
       ),
     ),
   ];
@@ -158,18 +157,18 @@ class _OnboardingPageState extends State<OnboardingPage>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const SizedBox(width: 60),
-                      TextButton(
-                        onPressed: _navigateToHome,
-                        child: const Text(
-                          'Skip',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
+                      // const SizedBox(width: 60),
+                      // TextButton(
+                      //   onPressed: _navigateToHome,
+                      //   child: const Text(
+                      //     'Skip',
+                      //     style: TextStyle(
+                      //       color: Colors.white,
+                      //       fontSize: 16,
+                      //       fontWeight: FontWeight.w500,
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),
@@ -187,38 +186,84 @@ class _OnboardingPageState extends State<OnboardingPage>
                         child: SlideTransition(
                           position: _slideAnimation,
                           child: Padding(
-                            padding: const EdgeInsets.all(40.0),
+                            padding: const EdgeInsets.all(20.0),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                // Emoji Icon
-                                TweenAnimationBuilder<double>(
-                                  tween: Tween(begin: 0.0, end: 1.0),
-                                  duration: const Duration(milliseconds: 800),
-                                  builder: (context, value, child) {
-                                    return Transform.scale(
-                                      scale: value,
-                                      child: Container(
-                                        width: 120,
-                                        height: 120,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            item.image,
-                                            style: const TextStyle(
-                                              fontSize: 60,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    );
+                                GestureDetector(
+                                  onTap: () {
+                                    print(items[currentPage].title);
                                   },
+                                  child: Container(
+                                    width: MediaQuery.sizeOf(context).width,
+                                    height:
+                                        MediaQuery.sizeOf(context).height * 0.4,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      // shape: BoxShape.rectangle,
+                                      image: DecorationImage(
+                                        image: AssetImage(item.image),
+                                        fit: BoxFit.cover,
+                                      ),
+                                      borderRadius:
+                                          currentPage == index &&
+                                                  items.length == 2
+                                              ? BorderRadius.only(
+                                                topRight: Radius.circular(40),
+                                                // topLeft: Radius.circular(40),
+                                                bottomLeft: Radius.circular(40),
+                                                bottomRight: Radius.circular(
+                                                  40,
+                                                ),
+                                              )
+                                              : currentPage == index &&
+                                                  items.length == 3
+                                              ? BorderRadius.only(
+                                                topRight: Radius.circular(40),
+                                                topLeft: Radius.circular(40),
+                                                // bottomLeft: Radius.circular(30),
+                                                bottomRight: Radius.circular(
+                                                  40,
+                                                ),
+                                              )
+                                              : BorderRadius.only(
+                                                topLeft: Radius.circular(30),
+                                                // topRight: Radius.circular(2),
+                                                bottomLeft: Radius.circular(30),
+                                                bottomRight: Radius.circular(
+                                                  30,
+                                                ),
+                                              ),
+                                    ),
+                                  ),
                                 ),
 
-                                const SizedBox(height: 40),
+                                // TweenAnimationBuilder<double>(
+                                //   tween: Tween(begin: 0.0, end: 1.0),
+                                //   duration: const Duration(milliseconds: 800),
+                                //   builder: (context, value, child) {
+                                //     return Transform.scale(
+                                //       scale: value,
+                                //       child: Container(
+                                //         width: 200,
+                                //         height: 200,
+                                //         decoration: BoxDecoration(
+                                //           color: Colors.red,
+                                //           shape: BoxShape.circle,
+                                //         ),
+                                //         child: Center(
+                                //           child: Image.asset(
+                                //             item.image,
+                                //             // style: const TextStyle(
+                                //             //   fontSize: 60,
+                                //             // ),
+                                //           ),
+                                //         ),
+                                //       ),
+                                //     );
+                                //   },
+                                // ),
+                                const SizedBox(height: 20),
 
                                 // Title
                                 Text(
@@ -230,8 +275,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
-
-                                const SizedBox(height: 20),
+                                const SizedBox(height: 10),
 
                                 // Description
                                 Text(
@@ -254,7 +298,7 @@ class _OnboardingPageState extends State<OnboardingPage>
 
                 // Bottom Section
                 Padding(
-                  padding: const EdgeInsets.all(40.0),
+                  padding: const EdgeInsets.all(20.0),
                   child: Column(
                     children: [
                       // Page Indicator
@@ -278,12 +322,12 @@ class _OnboardingPageState extends State<OnboardingPage>
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 60),
 
                       // Next/Get Started Button
                       SizedBox(
                         width: double.infinity,
-                        height: 56,
+                        height: 50,
                         child: ElevatedButton(
                           onPressed: _nextPage,
                           style: ElevatedButton.styleFrom(
@@ -307,6 +351,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                           ),
                         ),
                       ),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),

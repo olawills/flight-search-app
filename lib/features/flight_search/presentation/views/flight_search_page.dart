@@ -1,11 +1,8 @@
 import 'package:flight_search_app/core/constants/api_constants.dart';
-import 'package:flight_search_app/features/flight_search/domain/enities/city.dart';
-import 'package:flight_search_app/features/flight_search/presentation/providers/search_provider.dart';
-import 'package:flight_search_app/features/flight_search/presentation/views/flight_details_page.dart';
-import 'package:flight_search_app/features/flight_search/presentation/widgets/flight_list_item.dart';
+import 'package:flight_search_app/core/utils/show_or_not.dart';
+import 'package:flight_search_app/features/flight_search/presentation/views/flight_result_page.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 
 class FlightSearchPage extends StatefulWidget {
   const FlightSearchPage({super.key});
@@ -23,8 +20,6 @@ class _FlightSearchPageState extends State<FlightSearchPage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  City? _fromCity;
-  City? _toCity;
   DateTime? _selectedDate;
 
   @override
@@ -47,14 +42,6 @@ class _FlightSearchPageState extends State<FlightSearchPage>
     );
 
     _animationController.forward();
-
-    // Setup infinite scroll
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent * 0.8) {
-        _loadMore();
-      }
-    });
   }
 
   @override
@@ -64,50 +51,114 @@ class _FlightSearchPageState extends State<FlightSearchPage>
     super.dispose();
   }
 
-  void _loadMore() {
-    final provider = Provider.of<FlightSearchProvider>(context, listen: false);
-    if (provider.hasMore &&
-        !provider.isLoading &&
-        _fromCity != null &&
-        _toCity != null &&
-        _selectedDate != null) {
-      provider.searchFlights(
-        from: _fromCity!.code,
-        to: _toCity!.code,
-        date: _selectedDate!,
-        isLoadMore: true,
-      );
-    }
-  }
-
   void _searchFlights() {
     if (_formKey.currentState?.validate() ?? false) {
-      final provider = Provider.of<FlightSearchProvider>(
-        context,
-        listen: false,
-      );
-      provider.searchFlights(
-        from: _fromCity?.code ?? '',
-        to: _toCity?.code ?? '',
-        date: _selectedDate!,
-      );
+      // provider.searchFlights(
+      //   from: _fromCity?.code ?? '',
+      //   to: _toCity?.code ?? '',
+      //   date: _selectedDate!,
+      // );
     }
   }
 
-  void _swapCities() {
-    setState(() {
-      final temp = _fromCity;
-      _fromCity = _toCity;
-      _toCity = temp;
-    });
+  String selectedTripType = 'One way';
+  bool directFlightsOnly = false;
+  bool includeNearbyAirports = false;
+  String selectedTravelClass = 'Economy';
+  int passengers = 1;
+  DateTime? selectedDate;
+  String fromCity = '';
+  String toCity = '';
+
+  final List<String> tripTypes = ['One way', 'Round trip', 'Multi-City'];
+  final List<String> travelClasses = [
+    'Economy',
+    'Premium Economy',
+    'Business',
+    'First',
+  ];
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null && picked != selectedDate) {
+      setState(() {
+        selectedDate = picked;
+      });
+    }
   }
 
-  void _showFilterSheet() {
+  void _showCityPicker(BuildContext context, bool isFrom) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const Material(),
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isFrom ? 'Select Departure City' : 'Select Destination City',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(Icons.location_city),
+                  title: const Text('Lagos (LOS)'),
+                  subtitle: const Text(
+                    'Murtala Muhammed International Airport',
+                  ),
+                  onTap: () {
+                    setState(() {
+                      if (isFrom) {
+                        fromCity = 'Lagos (LOS)';
+                      } else {
+                        toCity = 'Lagos (LOS)';
+                      }
+                    });
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.location_city),
+                  title: const Text('Abuja (ABV)'),
+                  subtitle: const Text('Nnamdi Azikiwe International Airport'),
+                  onTap: () {
+                    setState(() {
+                      if (isFrom) {
+                        fromCity = 'Abuja (ABV)';
+                      } else {
+                        toCity = 'Abuja (ABV)';
+                      }
+                    });
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.location_city),
+                  title: const Text('London (LHR)'),
+                  subtitle: const Text('Heathrow Airport'),
+                  onTap: () {
+                    setState(() {
+                      if (isFrom) {
+                        fromCity = 'London (LHR)';
+                      } else {
+                        toCity = 'London (LHR)';
+                      }
+                    });
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          ),
     );
   }
 
@@ -115,348 +166,377 @@ class _FlightSearchPageState extends State<FlightSearchPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Search Flights'),
+        centerTitle: true,
+        automaticallyImplyLeading: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+      ),
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: SlideTransition(
             position: _slideAnimation,
-            child: Column(
-              children: [
-                // Header
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [AppColors.gradient1, AppColors.gradient2],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: InkWell(
+                      onTap: () => _showCityPicker(context, true),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            fromCity.isEmpty ? 'From' : fromCity,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          Icon(Icons.expand_more, color: Colors.grey[600]),
+                        ],
+                      ),
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+
+                  const SizedBox(height: 12),
+
+                  // To Field
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: InkWell(
+                      onTap: () => _showCityPicker(context, false),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            toCity.isEmpty ? 'To' : toCity,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          Icon(Icons.expand_more, color: Colors.grey[600]),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Trip Type Selection
+                  Row(
+                    children:
+                        tripTypes.map((type) {
+                          bool isSelected = selectedTripType == type;
+                          return Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedTripType = type;
+                                });
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      isSelected
+                                          ? Colors.white
+                                          : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color:
+                                        isSelected
+                                            ? Colors.blue
+                                            : Colors.grey[300]!,
+                                  ),
+                                ),
+                                child: Text(
+                                  type,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color:
+                                        isSelected
+                                            ? Colors.blue
+                                            : Colors.grey[600],
+                                    fontWeight:
+                                        isSelected
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Departure Date
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.decoratorColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: InkWell(
+                      onTap: () => _selectDate(context),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            selectedDate == null
+                                ? 'Departure Date'
+                                : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.decoratorText,
+                            ),
+                          ),
+                          Icon(
+                            Icons.calendar_today,
+                            color: Colors.grey[600],
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Optional Filters
+                  Text(
+                    'Optional Filters',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Direct Flights Only
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Find Your Flight',
+                      Text(
+                        'Direct Flights Only',
                         style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Switch(
+                        value: directFlightsOnly,
+                        onChanged: (value) {
+                          setState(() {
+                            directFlightsOnly = value;
+                          });
+                        },
+                        activeColor: AppColors.primary,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // Include Nearby Airports
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Include Nearby Airports',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Switch(
+                        value: includeNearbyAirports,
+                        onChanged: (value) {
+                          setState(() {
+                            includeNearbyAirports = value;
+                          });
+                        },
+                        activeColor: AppColors.primary,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Travel Class
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Travel Class',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        selectedTravelClass,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      // DropdownButton<String>(
+                      //   value: selectedTravelClass,
+                      //   underline: Container(),
+                      //   items:
+                      //       travelClasses.map((String value) {
+                      //         return DropdownMenuItem<String>(
+                      //           value: value,
+                      //           child: Text(value),
+                      //         );
+                      //       }).toList(),
+                      //   onChanged: (String? newValue) {
+                      //     setState(() {
+                      //       selectedTravelClass = newValue!;
+                      //     });
+                      //   },
+                      // ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Passengers
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    // crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Passengers',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Spacer(),
+                      Text(
+                        passengers.toString(),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed:
+                                passengers > 1
+                                    ? () {
+                                      setState(() {
+                                        passengers--;
+                                      });
+                                    }
+                                    : null,
+                            icon: const Icon(Icons.remove_circle_outline),
+                          ),
+                          Text(
+                            passengers.toString(),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed:
+                                passengers < 9
+                                    ? () {
+                                      setState(() {
+                                        passengers++;
+                                      });
+                                    }
+                                    : null,
+                            icon: const Icon(Icons.add_circle_outline),
+                          ),
+                        ],
+                      ).showOrHide(false),
+                    ],
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  // Search Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (fromCity.isEmpty || toCity.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please fill all fields'),
+                            ),
+                          );
+                          return;
+                        }
+                        context.loaderOverlay.show();
+                        _searchFlights();
+                        context.loaderOverlay.hide();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => FlightResultPage(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.butonColor,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Search Flights',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
                           color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Search and compare flights worldwide',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Search Form
-                Container(
-                  margin: const EdgeInsets.all(20),
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        // From and To Cities
-                        Row(
-                          children: [
-                            /*
-                            Expanded(
-                              child: CitySearchField(
-                                label: 'From',
-                                icon: Icons.flight_takeoff,
-                                selectedCity: _fromCity,
-                                onCitySelected: (city) {
-                                  setState(() {
-                                    _fromCity = city;
-                                  });
-                                },
-                                validator: (value) {
-                                  if (_fromCity == null) {
-                                    return 'Please select departure city';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-*/
-                            // Swap Button
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                              child: GestureDetector(
-                                onTap: _swapCities,
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
-                                    Icons.swap_horiz,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            /*
-                            Expanded(
-                              child: CitySearchField(
-                                label: 'To',
-                                icon: Icons.flight_land,
-                                selectedCity: _toCity,
-                                onCitySelected: (city) {
-                                  setState(() {
-                                    _toCity = city;
-                                  });
-                                },
-                                validator: (value) {
-                                  if (_toCity == null) {
-                                    return 'Please select arrival city';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                        */
-                          ],
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Date Picker
-                        InkWell(
-                          onTap: () async {
-                            final date = await showDatePicker(
-                              context: context,
-                              initialDate: _selectedDate ?? DateTime.now(),
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(
-                                const Duration(days: 365),
-                              ),
-                            );
-                            if (date != null) {
-                              setState(() {
-                                _selectedDate = date;
-                              });
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.calendar_today,
-                                  color: AppColors.primary,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  _selectedDate != null
-                                      ? DateFormat(
-                                        'MMM dd, yyyy',
-                                      ).format(_selectedDate!)
-                                      : 'Select Date',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color:
-                                        _selectedDate != null
-                                            ? Colors.black87
-                                            : Colors.grey.shade600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Search Button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: _searchFlights,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 2,
-                            ),
-                            child: const Text(
-                              'Search Flights',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
                     ),
                   ),
-                ),
-
-                // Results Section
-                Expanded(
-                  child: Consumer<FlightSearchProvider>(
-                    builder: (context, provider, child) {
-                      if (provider.isLoading && provider.flights.isEmpty) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      if (provider.errorMessage != null) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.error_outline,
-                                size: 64,
-                                color: Colors.grey,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                provider.errorMessage!,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: () => provider.clearResults(),
-                                child: const Text('Try Again'),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      if (provider.flights.isEmpty) {
-                        return const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.flight_outlined,
-                                size: 64,
-                                color: Colors.grey,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'No flights found',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Try adjusting your search criteria',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      return Column(
-                        children: [
-                          // Results Header
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '${provider.flights.length} flights found',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: _showFilterSheet,
-                                  icon: const Icon(Icons.filter_list),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Flight List
-                          Expanded(
-                            child: ListView.builder(
-                              controller: _scrollController,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
-                              itemCount:
-                                  provider.flights.length +
-                                  (provider.isLoading ? 1 : 0),
-                              itemBuilder: (context, index) {
-                                if (index == provider.flights.length) {
-                                  return const Center(
-                                    child: Padding(
-                                      padding: EdgeInsets.all(16),
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  );
-                                }
-
-                                final flight = provider.flights[index];
-                                return FlightListItem(
-                                  flight: flight,
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (context) => FlightDetailsPage(
-                                              flight: flight,
-                                            ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
