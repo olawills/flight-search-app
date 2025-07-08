@@ -6,9 +6,9 @@ plugins {
 }
 
 android {
-    namespace = "com.example.test_2"
+    namespace = "com.search_flight"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = 29
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -21,11 +21,11 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.test_2"
+        applicationId = "com.search_flight"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 24
+        targetSdk = 33
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

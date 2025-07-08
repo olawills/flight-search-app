@@ -3,6 +3,7 @@ import 'package:flight_search_app/features/flight_search/presentation/model/flig
 import 'package:flight_search_app/features/flight_search/presentation/views/flight_details_page.dart';
 import 'package:flight_search_app/features/flight_search/presentation/widgets/flight_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 
 class FlightResultPage extends StatefulWidget {
   const FlightResultPage({super.key});
@@ -105,14 +106,10 @@ class _FlightResultPageState extends State<FlightResultPage>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(25),
+                    color: AppColors.decoratorColor,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
-                    Icons.flight_takeoff,
-                    color: Colors.grey,
-                    size: 24,
-                  ),
+                  child: SvgPicture.asset('assets/svg/airplane.svg'),
                 ),
                 const Spacer(),
                 Column(
